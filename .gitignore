@@ -1,0 +1,38 @@
+# Entorno virtual
+env/
+venv/
+.venv/
+
+# Secretos
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Generador de reportes (no va al repo)
+code_Actual.py
+code_Actual_*.txt
+analisis_*.txt
+
+# Notebooks de prueba
+prueba.ipynb
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Logs
+*.log

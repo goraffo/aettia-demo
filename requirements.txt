@@ -3,4 +3,3 @@ pandas==3.0.6
 SQLAlchemy==2.1.2
 psycopg2-binary==2.9.13
 python-dotenv==1.2.4
-nltk==3.10.3

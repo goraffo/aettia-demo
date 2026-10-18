@@ -1,85 +1,71 @@
 """
-Extracción de n-gramas y cruce con clasificacion_gramas.
+Extracción de n-gramas (ahora consulta la tabla precalculada).
 """
-import re
 from collections import defaultdict
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-import nltk
 from sqlalchemy import text
 import pandas as pd
-
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', quiet=True)
-try:
-    nltk.data.find('corpora/stopwords')
-except LookupError:
-    nltk.download('stopwords', quiet=True)
-
-STOP_WORDS = set(stopwords.words('spanish'))
-SPECIAL_CHARS = re.compile(r'[^\w\s]')
-
-
-def is_valid_ngram(ngram):
-    words = ngram.split()
-    forbidden = {"y", "de", "a"}
-    if SPECIAL_CHARS.search(ngram):
-        return False
-    if all(w in STOP_WORDS or re.match(r'^\d+$', w) for w in words):
-        return False
-    if words[0] in forbidden or words[-1] in forbidden:
-        return False
-    return True
-
-
-def extract_ngrams(texto, n):
-    if not isinstance(texto, str):
-        return []
-    tokens = word_tokenize(texto.lower())
-    ngrams = [' '.join(tokens[i:i+n]) for i in range(len(tokens)-n+1)]
-    return [ng for ng in ngrams if is_valid_ngram(ng)]
 
 
 def extraer_y_clasificar(df_anuncios, skill_filtro=None, engine=None, excluir=None):
     """
-    Extrae n-gramas de c_titulo + c_detalle y los cruza con clasificacion_gramas.
-    Devuelve DataFrame con columnas: SKILL, tipo, anuncios, puestos, empresas
-    
-    Parametros:
-    - skill_filtro: 'Todas' | 'habilidad tecnica' | 'habilidad blanda'
-    - excluir: lista/set de n-gramas a excluir del ranking (ej: skills buscadas)
+    Consulta los n-gramas precalculados en anuncio_ngramas y los cruza con clasificacion_gramas.
     """
     excluir_set = set(excluir) if excluir else set()
+    
+    if df_anuncios.empty or engine is None:
+        return pd.DataFrame()
 
+    ids_topic = df_anuncios['id_topic'].dropna().unique().tolist()
+    if not ids_topic:
+        return pd.DataFrame()
+
+    # 1. Traer los ngramas precalculados de los anuncios filtrados
+    # Para no saturar la memoria, lo hacemos por lotes (o directo si es menor a 50k)
+    placeholders = ', '.join([f':id_{i}' for i in range(len(ids_topic))])
+    params = {f'id_{i}': v for i, v in enumerate(ids_topic)}
+    
+    query_ngramas = f"""
+        SELECT id_topic, ngrama 
+        FROM anuncio_ngramas 
+        WHERE id_topic IN ({placeholders})
+    """
+    
+    try:
+        df_ngramas = pd.read_sql(text(query_ngramas), engine, params=params)
+    except Exception as e:
+        print(f"Error consultando ngramas: {e}")
+        return pd.DataFrame()
+
+    if df_ngramas.empty:
+        return pd.DataFrame()
+
+    # 2. Agrupar para contar anuncios, puestos y empresas (igual que antes)
+    # Pero ahora es instantáneo porque solo iteramos sobre los ngramas encontrados
     ngram_ids = defaultdict(set)
     ngram_puestos = defaultdict(set)
     ngram_empresas = defaultdict(set)
+    
+    # Crear diccionario rápido de anuncios
+    dict_anuncios = df_anuncios.set_index('id_topic')[['c_titulo', 'empresa']].to_dict('index')
 
-    for _, row in df_anuncios.iterrows():
-        id_b = row['id_topic']
-        titulo = row['c_titulo']
-        empresa = row['empresa']
+    for _, row in df_ngramas.iterrows():
+        ng = row['ngrama']
+        if ng in excluir_set:
+            continue
+            
+        id_t = row['id_topic']
+        ngram_ids[ng].add(id_t)
+        
+        if id_t in dict_anuncios:
+            ngram_puestos[ng].add(dict_anuncios[id_t]['c_titulo'])
+            ngram_empresas[ng].add(dict_anuncios[id_t]['empresa'])
 
-        for col in ['c_titulo', 'c_detalle']:
-            texto = row[col]
-            if not isinstance(texto, str):
-                continue
-            for n in [1, 2, 3]:
-                for ng in set(extract_ngrams(texto, n)):
-                    ngram_ids[ng].add(id_b)
-                    ngram_puestos[ng].add(titulo)
-                    ngram_empresas[ng].add(empresa)
-
-    # Cruce con clasificacion_gramas
+    # 3. Cruzar con clasificacion_gramas
     clasif = pd.read_sql(text("SELECT ngrama, tipo FROM clasificacion_gramas"), engine)
     mapa_tipo = dict(zip(clasif['ngrama'], clasif['tipo']))
 
     resultados = []
     for ng, ids in ngram_ids.items():
-        if ng in excluir_set:
-            continue
         tipo = mapa_tipo.get(ng)
         if tipo is None:
             continue

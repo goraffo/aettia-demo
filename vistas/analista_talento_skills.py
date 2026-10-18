@@ -247,20 +247,29 @@ def _render_paso_2():
         st.markdown('<div class="sin-resultados">No se encontraron resultados</div>', unsafe_allow_html=True)
         return
 
-    if len(df) > UMBRAL_BUSQUEDA_EXTENSA:
-        segundos = int(len(df) / 1000 * 30)
-        minutos_min = max(1, segundos // 60)
-        minutos_max = minutos_min + 1
-        st.info(f"🔍 Búsqueda extensa detectada: estamos procesando {len(df):,} anuncios. "
-                f"Esto puede tomar entre {minutos_min} y {minutos_max} minutos. Gracias por la paciencia...")
+    es_extensa = len(df) > UMBRAL_BUSQUEDA_EXTENSA
+    aviso_placeholder = st.empty()
 
     with st.spinner("Analizando habilidades..."):
+        if es_extensa:
+            segundos = int(len(df) / 1000 * 5)
+            if segundos < 60:
+                tiempo_texto = f"{segundos} segundos"
+            else:
+                minutos = max(1, segundos // 60)
+                tiempo_texto = f"{minutos} minuto{'s' if minutos > 1 else ''}"
+            aviso_placeholder.info(f"🔍 Estamos procesando {len(df):,} anuncios. "
+                                   f"Esto puede tomar aproximadamente {tiempo_texto}. "
+                                   f"Para obtener resultados más rápido, refina los filtros.")
+
         df_gramas = extraer_y_clasificar(
             df,
             skill_filtro=params.get('skill'),
             engine=engine,
             excluir=params.get('skills_buscadas')
         )
+
+    aviso_placeholder.empty()
 
     if df_gramas.empty:
         st.markdown('<div class="sin-resultados">No se encontraron resultados</div>', unsafe_allow_html=True)

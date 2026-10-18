@@ -150,7 +150,6 @@ def _render_paso_1():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # Fila: Dominio temático | Origen
     col1, col2 = st.columns(2)
 
     with col1:
@@ -178,7 +177,6 @@ def _render_paso_1():
             key="tip_origen"
         )
 
-    # Fila: Desde | Hasta
     col3, col4 = st.columns(2)
 
     with col3:
@@ -281,6 +279,22 @@ def _render_paso_2():
         rango_hasta_sql = "AND (pd.c_yr * 100 + CAST(pd.c_mes AS INTEGER)) <= :rango_hasta"
         params_sql['rango_hasta'] = int(params['fecha_hasta'][:4]) * 100 + int(params['fecha_hasta'][5:7])
 
+    rango_desde_sub = ""
+    rango_hasta_sub = ""
+    if params.get('fecha_desde'):
+        rango_desde_sub = "AND (c_yr * 100 + CAST(c_mes AS INTEGER)) >= :rango_desde"
+    if params.get('fecha_hasta'):
+        rango_hasta_sub = "AND (c_yr * 100 + CAST(c_mes AS INTEGER)) <= :rango_hasta"
+
+    subquery_fechas = ""
+    if params.get('fecha_desde') or params.get('fecha_hasta'):
+        subquery_fechas = f"""
+            AND pm.id_master IN (
+                SELECT id_master FROM producto_detecciones 
+                WHERE 1=1 {rango_desde_sub} {rango_hasta_sub}
+            )
+        """
+
     query_master = f"""
     SELECT 
         pm.id_master,
@@ -290,6 +304,7 @@ def _render_paso_2():
     FROM producto_master pm
     JOIN organizacion o ON o.id_org = pm.id_org
     WHERE {where}
+    {subquery_fechas}
     """
 
     filtros_para_log = {
@@ -335,8 +350,6 @@ def _render_paso_2():
         pd.c_mes
     FROM producto_detecciones pd
     WHERE pd.id_master IN ({placeholders})
-    {rango_desde_sql}
-    {rango_hasta_sql}
     ORDER BY pd.id_master, pd.c_yr, CAST(pd.c_mes AS INTEGER)
     """
 
@@ -353,8 +366,13 @@ def _render_paso_2():
             continue
         
         periodos = [(int(d['c_yr']) * 100 + int(d['c_mes'])) for _, d in dets.iterrows()]
-        temporadas = _contar_temporadas(periodos)
-        primera = _primera_aparicion_ultima_temporada(periodos)
+        
+        p_hasta = params_sql.get('rango_hasta') if params.get('fecha_hasta') else None
+        
+        periodos_rango = [p for p in periodos if p_hasta is None or p <= p_hasta]
+        
+        temporadas = _contar_temporadas(periodos_rango)
+        primera = _primera_aparicion_ultima_temporada(periodos_rango)
         
         resultados.append({
             'nombre': row['nombre'],
@@ -388,8 +406,7 @@ def _render_paso_2():
         FROM producto_detecciones pd
         JOIN producto_master pm ON pm.id_master = pd.id_master
         WHERE {where}
-        {rango_desde_sql}
-        {rango_hasta_sql}
+        {subquery_fechas}
     """), engine, params=params_sql)
     
     if pd.notna(rango['periodo_min'][0]):

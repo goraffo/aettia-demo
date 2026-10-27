@@ -400,6 +400,3 @@ def aplicar_estilos():
         }
     </style>
     """, unsafe_allow_html=True)
-
-
-

@@ -470,7 +470,6 @@ def _render_paso_2():
     st.markdown("<br>", unsafe_allow_html=True)
 
     styled = df_final.style \
-        .set_properties(**{'color': '#FFFFFF'}) \
         .set_table_styles([
             {'selector': 'th', 'props': [('color', '#85C776'), ('font-weight', '700')]}
         ])

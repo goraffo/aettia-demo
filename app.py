@@ -4,7 +4,7 @@ from pathlib import Path
 
 st.set_page_config(
     page_title="Aettia",
-    page_icon="assets/Logo Aettia.png",
+    page_icon="assets/Aettia-Favicon.png",
     layout="wide",
     initial_sidebar_state="collapsed"
 )

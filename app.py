@@ -9,16 +9,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ============ METADATOS PARA COMPARTIR (WhatsApp/Redes) ============
-st.markdown("""
-    <head>
-        <meta property="og:title" content="Aettia - Hot Skills">
-        <meta property="og:description" content="Plataforma de análisis de habilidades clave en oferta académica y demanda laboral en Latinoamérica.">
-        <meta property="og:image" content="https://www.aettia.com/assets/Logo%20Aettia.png">
-        <meta property="og:type" content="website">
-    </head>
-""", unsafe_allow_html=True)
-
 from utils.estilos import aplicar_estilos
 aplicar_estilos()
 

@@ -7,6 +7,9 @@ server {
     listen ${PORT};
     server_name _;
 
+    # Header de diagnóstico para saber si Nginx está en el medio
+    add_header X-Aettia-Proxy "nginx" always;
+
     location = /og-aettia.png {
         alias /app/assets/og-aettia.png;
         expires 7d;

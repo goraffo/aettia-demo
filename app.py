@@ -27,7 +27,6 @@ params = st.query_params
 if "vista" in params:
     nueva_vista = params.get("vista")
     if nueva_vista in ("talento", "curricular", "home"):
-        # Log de navegación (solo si cambia de vista)
         if nueva_vista != st.session_state.vista:
             from utils.tracking import log_evento
             log_evento(accion="navegar", vista=nueva_vista)
@@ -64,36 +63,11 @@ st.markdown(f"""
 if st.session_state.vista == "home":
     # ===== HERO =====
     st.markdown("""
-    <div style="
-        min-height: 300px;
-        background: linear-gradient(to bottom, #FFFFFF 50%, #00D1C3 100%);
-        margin: 0 -80px 5px -80px;
-        padding: 40px 120px;
-        box-sizing: border-box;
-    ">
-        <div style="
-            font-family: 'Figtree', sans-serif;
-            font-weight: 700;
-            font-size: 56px;
-            color: #333333;
-            letter-spacing: 2px;
-            line-height: 1.1;
-        ">Hot Skills</div>
-        <div style="
-            width: 80px;
-            height: 4px;
-            background-color: #333333;
-            margin-top: 20px;
-            margin-bottom: 20px;
-        "></div>
-        <div style="
-            font-family: 'Figtree', sans-serif;
-            font-weight: 600;
-            font-size: 16px;
-            color: #333333;
-            line-height: 1.5;
-            max-width: 600px;
-        ">AETTIA no es un directorio de cursos ni un portal de empleo. Es una plataforma de inteligencia que responde a una pregunta que nadie más responde:<br><br>¿Qué skills demandan las empresas y qué programas las están formando?</div>
+    <div class="aettia-hero">
+        <div class="hero-titulo">Hot Skills</div>
+        <div class="hero-divisor"></div>
+        <div class="hero-texto">AETTIA no es un directorio de cursos ni un portal de empleo. Es una plataforma de inteligencia que responde a una pregunta que nadie más responde:</div>
+        <div class="hero-gancho">¿Qué skills demandan las empresas y qué programas las están formando?</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -101,21 +75,21 @@ if st.session_state.vista == "home":
 
     st.markdown("""
     <div class="cards-grid">
-        <a href="?vista=talento" target="_self" class="card-activa">
+        <a href="?vista=talento" target="_self" class="card-activa card-talento">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF" width="56" height="56">
                 <circle cx="12" cy="7" r="4"/>
                 <path d="M12 13c-3.87 0-7 2.13-7 4.75V20h14v-2.25C19 15.13 15.87 13 12 13z"/>
             </svg>
             <div class="card-titulo-grande">ANALISTA DE TALENTO</div>
-            <div class="card-subtitulo-secundario">Conoce las skills más demandadas</div>
+            <div class="card-subtitulo-secundario">Conoce las skills más demandadas →</div>
         </a>
-        <a href="?vista=curricular" target="_self" class="card-activa">
+        <a href="?vista=curricular" target="_self" class="card-activa card-curricular">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF" width="56" height="56">
                 <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
                 <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
             </svg>
             <div class="card-titulo-grande">DISEÑADOR CURRICULAR</div>
-            <div class="card-subtitulo-secundario">Conoce los productos académicos ofertados</div>
+            <div class="card-subtitulo-secundario">Conoce los productos académicos ofertados →</div>
         </a>
     </div>
     """, unsafe_allow_html=True)
@@ -137,7 +111,8 @@ if st.session_state.vista == "home":
         ─────────────────────────────<br><br>
         Aettia es una plataforma de análisis no oficial para el mercado de educación continua y oferta laboral en Latinoamérica.<br>
         Toda la información presentada se basa en fuentes de acceso público y puede no ser completamente precisa. 
-        Aettia no está afiliada a ninguna organización educativa ni portal de empleo.
+        Aettia no está afiliada a ninguna organización educativa ni portal de empleo.<br><br>
+        Para consultas, feedback o colaboraciones: <a href="mailto:contacto.aettia@gmail.com" style="color: #FBB03B; text-decoration: none;">contacto.aettia@gmail.com</a>
     </div>
     """, unsafe_allow_html=True)
 

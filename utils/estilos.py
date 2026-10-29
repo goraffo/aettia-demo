@@ -16,7 +16,7 @@ def aplicar_estilos():
 
         .aettia-nav {
             background-color: #FBB03B;
-            padding: 14px 30px;
+            padding: 14px 80px;
             margin: -80px -80px 30px -80px;
             display: flex;
             justify-content: space-between;
@@ -32,7 +32,64 @@ def aplicar_estilos():
         }
 
         .aettia-nav img {
-            margin-left: 80px;
+            margin-left: 0;
+        }
+
+        /* Hero oscuro con textura de puntos */
+        .aettia-hero {
+            min-height: 300px;
+            margin: -30px -80px 5px -80px;
+            padding: 40px 80px;
+            box-sizing: border-box;
+            background-color: #3F3F3F;
+            background-image:
+                radial-gradient(800px 4000px at 88% 25%, rgba(0, 154, 222, 0.20), transparent 70%),
+                radial-gradient(520px 300px at 98% 95%, rgba(133, 199, 118, 0.09), transparent 70%),
+                radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, #454545, #3A3A3A);
+            background-size: 100% 100%, 100% 100%, 22px 22px, 100% 100%;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                inset 0 -30px 40px -30px rgba(0, 0, 0, 0.35),
+                0 14px 24px -14px rgba(0, 0, 0, 0.55);
+            border-width: 0 0 3px 0;
+            border-style: solid;
+            border-image: linear-gradient(to right, #FBB03B 0%, rgba(251, 176, 59, 0) 75%) 1;
+        }
+
+        .hero-titulo {
+            font-family: 'Figtree', sans-serif;
+            font-weight: 700;
+            font-size: 56px;
+            color: #FFFFFF;
+            letter-spacing: 2px;
+            line-height: 1.1;
+        }
+
+        .hero-divisor {
+            width: 80px;
+            height: 4px;
+            margin: 20px 0;
+            background: linear-gradient(to right, #009ADE 50%, #85C776 50%);
+        }
+
+        .hero-texto {
+            font-family: 'Figtree', sans-serif;
+            font-weight: 600;
+            font-size: 16px;
+            color: #D6D6D6;
+            line-height: 1.5;
+            max-width: 600px;
+        }
+
+        .hero-gancho {
+            font-family: 'Figtree', sans-serif;
+            font-weight: 700;
+            font-size: 20px;
+            color: #FFFFFF;
+            line-height: 1.4;
+            max-width: 600px;
+            margin-top: 14px;
         }
 
         .estado-nav {
@@ -91,6 +148,20 @@ def aplicar_estilos():
             margin-top: 15px;
             letter-spacing: 1px;
             text-decoration: none !important;
+        }
+
+        /* Colores de marca para las tarjetas del home */
+        .card-talento {
+            border-top: 4px solid #009ADE;
+        }
+        .card-curricular {
+            border-top: 4px solid #85C776;
+        }
+        .card-talento svg {
+            fill: #009ADE;
+        }
+        .card-curricular svg {
+            fill: #85C776;
         }
 
         /* Botón "Volver al inicio" como link */
@@ -388,14 +459,34 @@ def aplicar_estilos():
             color: #333333 !important;
         }
 
+        /* ==========================================
+           ARREGLO PARA MÓVIL (Ancho completo y sin desbordes)
+           ========================================== */
         @media (max-width: 768px) {
+            .aettia-hero {
+                box-sizing: border-box;
+                width: 100vw;
+                margin: 0 0 5px calc(50% - 50vw);
+                padding: 28px 20px;
+            }
+            .hero-titulo {
+                font-size: 40px;
+            }
+
             .aettia-nav {
-                margin: -80px -20px 30px -20px;
+                box-sizing: border-box;
+                width: 100vw;
+                margin: -80px 0 30px calc(50% - 50vw);
                 padding: 10px 15px;
             }
             .aettia-nav img {
                 height: 30px !important;
-                margin-left: 40px;
+                margin-left: 0;
+            }
+
+            /* Seguro para evitar que cualquier elemento se salga de la pantalla */
+            [data-testid="stMain"], [data-testid="stAppViewContainer"] { 
+                overflow-x: hidden; 
             }
         }
     </style>

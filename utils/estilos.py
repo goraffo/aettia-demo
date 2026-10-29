@@ -14,13 +14,16 @@ def aplicar_estilos():
         section[data-testid="stSidebar"] { display: none; }
         header[data-testid="stHeader"] { background: transparent; }
 
+        /* ==========================================
+           BARRA DE NAVEGACIÓN
+           ========================================== */
         .aettia-nav {
             background-color: #FBB03B;
-            padding: 14px 80px;
+            padding: 12px 80px 10px 80px;
             margin: -80px -80px 30px -80px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
         }
         .aettia-logo {
             font-family: 'Oswald', sans-serif;
@@ -30,15 +33,78 @@ def aplicar_estilos():
             letter-spacing: 3px;
             margin: 0;
         }
-
         .aettia-nav img {
             margin-left: 0;
         }
 
-        /* Hero oscuro con textura de puntos */
+        /* Botón de login dentro de la barra */
+        .auth-slot {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .auth-nombre {
+            font-family: 'Figtree', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: #333333;
+        }
+        .auth-btn {
+            background: #333333;
+            color: #FFFFFF !important;
+            text-decoration: none !important;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: 'Figtree', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: background-color 180ms ease;
+        }
+        .auth-btn:hover {
+            background: #4D4D4D;
+        }
+
+        /* Diálogo de login */
+        .auth-opcion {
+            display: block;
+            text-align: center;
+            background: #333333;
+            color: #FFFFFF !important;
+            text-decoration: none !important;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-family: 'Figtree', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .auth-opcion:hover { background: #4D4D4D; }
+        .auth-opcion-deshabilitado {
+            display: block;
+            text-align: center;
+            background: #333333;
+            color: #888888;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-family: 'Figtree', sans-serif;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: not-allowed;
+        }
+        .auth-nota {
+            font-size: 12px;
+            color: #888888;
+            margin-top: 8px;
+        }
+
+        /* ==========================================
+           HERO
+           ========================================== */
         .aettia-hero {
             min-height: 300px;
-            margin: -30px -80px 5px -80px;
+            margin: 0 -80px 5px -80px;
             padding: 40px 80px;
             box-sizing: border-box;
             background-color: #3F3F3F;
@@ -57,6 +123,10 @@ def aplicar_estilos():
             border-image: linear-gradient(to right, #FBB03B 0%, rgba(251, 176, 59, 0) 75%) 1;
         }
 
+        div[data-testid="stVerticalBlock"] > div:has(.aettia-hero) {
+            margin-top: -32px;
+        }
+
         .hero-titulo {
             font-family: 'Figtree', sans-serif;
             font-weight: 700;
@@ -65,14 +135,12 @@ def aplicar_estilos():
             letter-spacing: 2px;
             line-height: 1.1;
         }
-
         .hero-divisor {
             width: 80px;
             height: 4px;
             margin: 20px 0;
             background: linear-gradient(to right, #009ADE 50%, #85C776 50%);
         }
-
         .hero-texto {
             font-family: 'Figtree', sans-serif;
             font-weight: 600;
@@ -81,7 +149,6 @@ def aplicar_estilos():
             line-height: 1.5;
             max-width: 600px;
         }
-
         .hero-gancho {
             font-family: 'Figtree', sans-serif;
             font-weight: 700;
@@ -90,8 +157,12 @@ def aplicar_estilos():
             line-height: 1.4;
             max-width: 600px;
             margin-top: 14px;
+            letter-spacing: 0.5px;
         }
 
+        /* ==========================================
+           COMPONENTES GENERALES
+           ========================================== */
         .estado-nav {
             color: #FBB03B;
             font-family: 'Figtree', sans-serif;
@@ -99,7 +170,6 @@ def aplicar_estilos():
             letter-spacing: 1px;
             margin-bottom: 20px;
         }
-
         .nosotros-footer {
             text-align: center;
             color: #777777;
@@ -109,14 +179,13 @@ def aplicar_estilos():
             letter-spacing: 1px;
         }
 
-        /* Grid de cards clickeables */
+        /* Cards del home */
         .cards-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
             margin-bottom: 20px;
         }
-
         .card-activa {
             background-color: #4D4D4D;
             border-radius: 8px;
@@ -149,38 +218,10 @@ def aplicar_estilos():
             letter-spacing: 1px;
             text-decoration: none !important;
         }
-
-        /* Colores de marca para las tarjetas del home */
-        .card-talento {
-            border-top: 4px solid #009ADE;
-        }
-        .card-curricular {
-            border-top: 4px solid #85C776;
-        }
-        .card-talento svg {
-            fill: #009ADE;
-        }
-        .card-curricular svg {
-            fill: #85C776;
-        }
-
-        /* Botón "Volver al inicio" como link */
-        .btn-volver {
-            display: inline-block;
-            background-color: #4D5D66;
-            color: #FFFFFF !important;
-            text-decoration: none !important;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-family: 'Figtree', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-        .btn-volver:hover {
-            background-color: #5A6B75;
-            color: #FFFFFF !important;
-        }
+        .card-talento { border-top: 4px solid #009ADE; }
+        .card-curricular { border-top: 4px solid #85C776; }
+        .card-talento svg { fill: #009ADE; }
+        .card-curricular svg { fill: #85C776; }
 
         .card-inactiva {
             background-color: #4D4D4D;
@@ -209,8 +250,26 @@ def aplicar_estilos():
             margin-top: 8px;
             letter-spacing: 1px;
         }
-        .card-icono { font-size: 42px; }
 
+        /* Botón volver */
+        .btn-volver {
+            display: inline-block;
+            background-color: #4D5D66;
+            color: #FFFFFF !important;
+            text-decoration: none !important;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-family: 'Figtree', sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+        .btn-volver:hover {
+            background-color: #5A6B75;
+            color: #FFFFFF !important;
+        }
+
+        /* Botones nativos de Streamlit */
         .stButton > button {
             background-color: #4D5D66;
             color: #FFFFFF;
@@ -229,6 +288,7 @@ def aplicar_estilos():
             color: #FFFFFF;
         }
 
+        /* Labels de filtros */
         .filtro-label {
             font-family: 'Figtree', sans-serif;
             font-size: 14px;
@@ -236,7 +296,6 @@ def aplicar_estilos():
             margin-bottom: 8px;
             letter-spacing: 1px;
         }
-
         .filtro-label-verde {
             font-family: 'Figtree', sans-serif;
             font-size: 14px;
@@ -254,7 +313,6 @@ def aplicar_estilos():
             color: #333333;
             line-height: 1.8;
         }
-
         .barra-nota {
             background-color: #4D4D4D;
             color: #DDDDDD;
@@ -263,7 +321,6 @@ def aplicar_estilos():
             font-family: 'Figtree', sans-serif;
             font-size: 13px;
         }
-
         .sin-resultados {
             font-family: 'Figtree', sans-serif;
             color: #AAAAAA;
@@ -272,7 +329,7 @@ def aplicar_estilos():
             font-size: 16px;
         }
 
-        /* Chips del multiselect en azul */
+        /* Chips de los filtros */
         span[data-tag] {
             background-color: #009ADE !important;
             color: #FFFFFF !important;
@@ -284,8 +341,6 @@ def aplicar_estilos():
             fill: #FFFFFF !important;
             stroke: #FFFFFF !important;
         }
-
-        /* Chips verdes (para Diseñador Curricular) */
         .st-key-esc_orgs_multiselect span[data-tag],
         .st-key-esc_skills_multiselect span[data-tag],
         .st-key-esc_tipos_multiselect span[data-tag],
@@ -322,7 +377,7 @@ def aplicar_estilos():
             stroke: #333333 !important;
         }
 
-        /* Labels de todos los filtros en azul */
+        /* Labels de filtros en azul */
         label[data-testid="stWidgetLabel"] p,
         .stTextInput label p,
         .stSelectbox label p,
@@ -333,7 +388,7 @@ def aplicar_estilos():
             font-weight: 600 !important;
         }
 
-        /* Labels verdes en Diseñador Curricular */
+        /* Labels de filtros en verde (Diseñador Curricular) */
         .st-key-esc_dominio label p,
         .st-key-esc_orgs_multiselect label p,
         .st-key-esc_skills_multiselect label p,
@@ -460,19 +515,21 @@ def aplicar_estilos():
         }
 
         /* ==========================================
-           ARREGLO PARA MÓVIL (Ancho completo y sin desbordes)
+           MÓVIL
            ========================================== */
         @media (max-width: 768px) {
             .aettia-hero {
-                box-sizing: border-box;
                 width: 100vw;
                 margin: 0 0 5px calc(50% - 50vw);
                 padding: 28px 20px;
+                box-sizing: border-box;
+            }
+            div[data-testid="stVerticalBlock"] > div:has(.aettia-hero) {
+                margin-top: -40px !important;
             }
             .hero-titulo {
                 font-size: 40px;
             }
-
             .aettia-nav {
                 box-sizing: border-box;
                 width: 100vw;
@@ -481,12 +538,18 @@ def aplicar_estilos():
             }
             .aettia-nav img {
                 height: 30px !important;
-                margin-left: 0;
+                margin-left: 40px;
+                margin-top: -4px;
             }
-
-            /* Seguro para evitar que cualquier elemento se salga de la pantalla */
-            [data-testid="stMain"], [data-testid="stAppViewContainer"] { 
-                overflow-x: hidden; 
+            .auth-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            .auth-nombre {
+                display: none;
+            }
+            [data-testid="stMain"], [data-testid="stAppViewContainer"] {
+                overflow-x: hidden;
             }
         }
     </style>

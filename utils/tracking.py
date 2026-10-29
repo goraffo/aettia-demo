@@ -38,6 +38,27 @@ def _obtener_session_id():
     return st.session_state.session_id
 
 
+def _obtener_usuario_id(engine):
+    """ID interno del usuario logueado, o None. Nunca rompe el tracking."""
+    try:
+        if not getattr(st.user, "is_logged_in", False):
+            return None
+        uid = st.session_state.get("usuario_id")
+        if uid is None:
+            with engine.connect() as conn:
+                row = conn.execute(
+                    text("SELECT id FROM usuarios WHERE google_sub = :sub"),
+                    {"sub": st.user.sub},
+                ).fetchone()
+            uid = row[0] if row else None
+            if uid is not None:
+                st.session_state.usuario_id = uid
+        return uid
+    except Exception as e:
+        print(f"⚠️ tracking: no se pudo obtener usuario_id: {e}")
+        return None
+
+
 def _truncar(valor, max_len):
     """Trunca un string a max_len caracteres."""
     if valor is None:
@@ -67,17 +88,6 @@ def log_evento(accion, vista=None, pestana=None, filtros=None,
                resultados=None, duracion_seg=None, error_msg=None):
     """
     Inserta un evento en metricas_user.
-
-    Parámetros:
-    - accion: 'navegar' | 'buscar' | 'descargar' | 'error'
-    - vista: 'analista' | 'curricular' | 'home'
-    - pestana: 'puestos' | 'skills' | 'dominios' | 'escuelas' | 'tipos'
-    - filtros: dict con los filtros aplicados
-    - resultados: cantidad de filas devueltas
-    - duracion_seg: segundos que tardó la acción
-    - error_msg: mensaje de error (solo si accion='error')
-
-    No hace nada si TRACKING_ACTIVO es False.
     """
     if not TRACKING_ACTIVO:
         return
@@ -86,19 +96,23 @@ def log_evento(accion, vista=None, pestana=None, filtros=None,
         engine = get_engine()
         ip = getattr(st.context, "ip_address", None)
         session_id = _obtener_session_id()
+        
+        # Obtenemos el usuario_id de forma aislada
+        usuario_id = _obtener_usuario_id(engine)
 
         with engine.connect() as conn:
             conn.execute(text("""
                 INSERT INTO metricas_user
-                (timestamp, session_id, ip_hash, vista, pestana, accion,
+                (timestamp, session_id, ip_hash, usuario_id, vista, pestana, accion,
                  filtros_json, resultados, duracion_seg, error_msg, origen)
                 VALUES
-                (:timestamp, :session_id, :ip_hash, :vista, :pestana, :accion,
+                (:timestamp, :session_id, :ip_hash, :usuario_id, :vista, :pestana, :accion,
                  :filtros_json, :resultados, :duracion_seg, :error_msg, :origen)
             """), {
                 "timestamp": datetime.now(),
                 "session_id": session_id,
                 "ip_hash": _hash_ip(ip),
+                "usuario_id": usuario_id,
                 "vista": vista,
                 "pestana": pestana,
                 "accion": accion,
@@ -110,7 +124,6 @@ def log_evento(accion, vista=None, pestana=None, filtros=None,
             })
             conn.commit()
     except Exception as e:
-        # Nunca romper la app por un fallo del tracking
         print(f"⚠️ tracking error: {e}")
 
 
@@ -120,17 +133,6 @@ def buscar_con_metricas(engine, query, params, filtros, vista, pestana,
                         mensaje_spinner="Buscando anuncios..."):
     """
     Ejecuta una búsqueda en BD, loguea la métrica y maneja errores.
-
-    Devuelve el DataFrame o None si hubo error.
-
-    Parámetros:
-    - engine: conexión SQLAlchemy
-    - query: SQL (string)
-    - params: dict de parámetros para la query
-    - filtros: dict con los filtros usados (para el log)
-    - vista: 'analista' | 'curricular'
-    - pestana: 'puestos' | 'skills' | 'dominios' | 'escuelas' | 'tipos'
-    - mensaje_spinner: texto que se muestra mientras carga
     """
     import pandas as pd
 

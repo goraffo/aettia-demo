@@ -1,6 +1,8 @@
 import streamlit as st
 import base64
+import html
 from pathlib import Path
+from sqlalchemy import text
 
 st.set_page_config(
     page_title="Aettia",
@@ -10,7 +12,69 @@ st.set_page_config(
 )
 
 from utils.estilos import aplicar_estilos
+from utils.db import get_engine
 aplicar_estilos()
+
+# Red de seguridad: evita caídas si Railway no tiene los secretos configurados aún
+_logueado = bool(getattr(st.user, "is_logged_in", False))
+
+# ============ DIÁLOGO DE LOGIN ============
+@st.dialog("Iniciar sesión")
+def _dialogo_login():
+    st.markdown(
+        '<a class="auth-opcion" href="?auth=google" target="_self">Continuar con Google</a>'
+        '<div class="auth-opcion-deshabilitado">Continuar con Microsoft</div>'
+        '<p class="auth-nota">Iniciar sesión es opcional: puedes usar Aettia sin cuenta. '
+        'Guardamos tu nombre y correo para identificar tu cuenta y asociamos tu actividad de uso a ella.</p>',
+        unsafe_allow_html=True,
+    )
+
+# ============ MANEJAR LOGIN/LOGOUT ============
+_auth = st.query_params.get("auth")
+if _auth in ("google", "microsoft"):
+    st.query_params.clear()
+    st.login(_auth)
+    st.stop()
+elif _auth == "logout":
+    st.query_params.clear()
+    st.logout()
+    st.stop()
+elif _auth == "login":
+    st.query_params.clear()
+    _dialogo_login()
+
+# ============ UPSERT USUARIO EN BD ============
+def _upsert_usuario():
+    """Inserta o actualiza el usuario logueado. Devuelve el id numérico o None."""
+    if not _logueado:
+        return None
+    try:
+        engine = get_engine()
+        with engine.connect() as conn:
+            row = conn.execute(text("""
+                INSERT INTO usuarios (google_sub, email, nombre, ultimo_acceso)
+                VALUES (:sub, :email, :nombre, NOW())
+                ON CONFLICT (google_sub) DO UPDATE
+                  SET email = EXCLUDED.email,
+                      nombre = EXCLUDED.nombre,
+                      ultimo_acceso = NOW()
+                RETURNING id
+            """), {
+                "sub": st.user.sub,
+                "email": st.user.email,
+                "nombre": st.user.name,
+            }).fetchone()
+            conn.commit()
+            return row[0] if row else None
+    except Exception as e:
+        print(f"⚠️ upsert usuario error: {e}")
+        return None
+
+if _logueado:
+    if "usuario_id" not in st.session_state:
+        st.session_state.usuario_id = _upsert_usuario()
+else:
+    st.session_state.pop("usuario_id", None)
 
 # ============ LOGO ============
 def _logo_base64():
@@ -44,7 +108,7 @@ if "vista" in params:
         st.query_params.clear()
         st.rerun()
 
-# ============ NAV SUPERIOR CON LOGO ============
+# ============ NAV SUPERIOR CON LOGO Y LOGIN ============
 logo_b64 = _logo_base64()
 
 if logo_b64:
@@ -52,16 +116,23 @@ if logo_b64:
 else:
     logo_html = '<div class="aettia-logo">AETTIA</div>'
 
+# Botón de login como enlace HTML dentro de la barra
+if _logueado:
+    nombre = html.escape(((st.user.name or st.user.email or "").split(" ")[0]))
+    auth_html = (f'<span class="auth-nombre">{nombre}</span>'
+                 '<a class="auth-btn" href="?auth=logout" target="_self">Cerrar sesión</a>')
+else:
+    auth_html = '<a class="auth-btn" href="?auth=login" target="_self">Iniciar sesión</a>'
+
 st.markdown(f"""
 <div class="aettia-nav">
     <div>{logo_html}</div>
-    <div></div>
+    <div class="auth-slot">{auth_html}</div>
 </div>
 """, unsafe_allow_html=True)
 
 # ============ CONTENIDO SEGÚN VISTA ============
 if st.session_state.vista == "home":
-    # ===== HERO =====
     st.markdown("""
     <div class="aettia-hero">
         <div class="hero-titulo">Hot Skills</div>

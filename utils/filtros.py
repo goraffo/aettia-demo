@@ -63,7 +63,7 @@ def construir_filtros_puestos(
         condiciones = []
         for i, p in enumerate(puestos):
             key = f"puesto_{i}"
-            condiciones.append(f"c_titulo ILIKE :{key}")
+            condiciones.append(f"unaccent(c_titulo) ILIKE unaccent(:{key})")
             params_dict[key] = f"%{p}%"
         filtros.append(f"({' OR '.join(condiciones)})")
     
@@ -229,7 +229,7 @@ def construir_filtros_skills(
         condiciones = []
         for i, s in enumerate(skills_buscadas):
             key = f"skl_{i}"
-            condiciones.append(f"(c_titulo ILIKE :{key} OR c_detalle ILIKE :{key})")
+            condiciones.append(f"(unaccent(c_titulo) ILIKE unaccent(:{key}) OR unaccent(c_detalle) ILIKE unaccent(:{key}))")
             params_dict[key] = f"%{s}%"
         filtros.append(f"({' OR '.join(condiciones)})")
     

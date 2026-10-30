@@ -11,6 +11,7 @@ import pandas as pd
 from utils.db import get_engine
 from utils.filtros import construir_filtros_escuelas
 from utils.tracking import log_evento, buscar_con_metricas
+from utils.temporadas import contar_temporadas
 
 
 MESES_ES = {
@@ -48,31 +49,6 @@ def _periodo_desde_mes_anio(texto):
     mes = MESES_NOMBRE_A_NUM.get(partes[0], 0)
     anio = int(partes[1])
     return anio * 100 + mes
-
-
-def _contar_temporadas(periodos):
-    if not periodos:
-        return 0
-    periodos_ordenados = sorted(set(periodos))
-    temporadas = 1
-    for i in range(1, len(periodos_ordenados)):
-        if periodos_ordenados[i] - periodos_ordenados[i-1] > 1:
-            temporadas += 1
-    return temporadas
-
-
-def _primera_aparicion_ultima_temporada(periodos):
-    """Devuelve el primer período de la última temporada (racha consecutiva)."""
-    if not periodos:
-        return None
-    ordenados = sorted(set(periodos))
-    inicio_ultima = ordenados[-1]
-    for i in range(len(ordenados) - 1, 0, -1):
-        if ordenados[i] - ordenados[i-1] > 1:
-            inicio_ultima = ordenados[i]
-            break
-        inicio_ultima = ordenados[i-1]
-    return inicio_ultima
 
 
 def render():
@@ -361,9 +337,11 @@ def _render_paso_2():
     SELECT 
         pd.id_master,
         pd.c_yr,
-        pd.c_mes
+        pd.c_mes,
+        (pd.c_yr * 100 + CAST(pd.c_mes AS INTEGER)) AS periodo
     FROM producto_detecciones pd
     WHERE pd.id_master IN ({placeholders})
+    {rango_desde_sql} {rango_hasta_sql}
     ORDER BY pd.id_master, pd.c_yr, CAST(pd.c_mes AS INTEGER)
     """
 
@@ -379,14 +357,10 @@ def _render_paso_2():
         if dets.empty:
             continue
         
-        periodos = [(int(d['c_yr']) * 100 + int(d['c_mes'])) for _, d in dets.iterrows()]
+        periodos = [int(p) for p in dets['periodo'].tolist()]
         
-        p_hasta = params_sql.get('rango_hasta') if params.get('fecha_hasta') else None
-        
-        periodos_rango = [p for p in periodos if p_hasta is None or p <= p_hasta]
-            
-        temporadas = _contar_temporadas(periodos_rango)
-        primera = _primera_aparicion_ultima_temporada(periodos_rango)
+        temporadas = contar_temporadas(periodos)
+        primera = min(periodos) if periodos else None
         
         resultados.append({
             'nombre': row['nombre'],
@@ -402,10 +376,9 @@ def _render_paso_2():
 
     df_final = pd.DataFrame(resultados)
     df_final['_periodo_orden'] = df_final['desde'].apply(_periodo_desde_mes_anio)
-    df_final = df_final.sort_values('_periodo_orden', ascending=False).head(LIMITE_RESULTADOS)
+    df_final = df_final.sort_values(['apariciones', '_periodo_orden'], ascending=[False, False]).head(LIMITE_RESULTADOS)
     df_final = df_final.drop(columns=['_periodo_orden']).reset_index(drop=True)
 
-    # --- Decidir columnas según número de organizaciones ---
     num_orgs = len(params.get('organizaciones', []))
     if num_orgs >= 2:
         df_final = df_final[['nombre', 'escuela', 'tipo', 'desde', 'apariciones']]
@@ -414,19 +387,11 @@ def _render_paso_2():
 
     st.markdown("### RESULTADOS PARA ESCUELAS")
 
-    rango = pd.read_sql(text(f"""
-        SELECT 
-            MIN(pd.c_yr * 100 + CAST(pd.c_mes AS INTEGER)) as periodo_min,
-            MAX(pd.c_yr * 100 + CAST(pd.c_mes AS INTEGER)) as periodo_max
-        FROM producto_detecciones pd
-        JOIN producto_master pm ON pm.id_master = pd.id_master
-        WHERE {where}
-        {subquery_fechas}
-    """), engine, params=params_sql)
-    
-    if pd.notna(rango['periodo_min'][0]):
-        fecha_min = _formato_mes_anio(int(rango['periodo_min'][0]))
-        fecha_max = _formato_mes_anio(int(rango['periodo_max'][0]))
+    if not df_det.empty:
+        periodo_min = int(df_det['periodo'].min())
+        periodo_max = int(df_det['periodo'].max())
+        fecha_min = _formato_mes_anio(periodo_min)
+        fecha_max = _formato_mes_anio(periodo_max)
         texto_nota = f"Nota: Los resultados mostrados están basados en hallazgos entre {fecha_min} y {fecha_max}."
     else:
         texto_nota = "Nota: Sin hallazgos en el rango seleccionado."
@@ -436,7 +401,7 @@ def _render_paso_2():
         st.markdown(f'''
         <div class="barra-nota">
             {texto_nota}<br>
-            <b style="color: #85C776;">Columnas:</b> <b>desde</b> — mes en que inició su temporada más reciente. <b>apariciones</b> — número de temporadas en que estuvo activo.
+            <b style="color: #85C776;">Columnas:</b> <b>desde</b> — primera detección dentro del rango seleccionado. <b>apariciones</b> — número de temporadas en que estuvo activo dentro del rango.
         </div>
         ''', unsafe_allow_html=True)
     with col2:

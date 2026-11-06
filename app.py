@@ -13,21 +13,50 @@ st.set_page_config(
 
 from utils.estilos import aplicar_estilos
 from utils.db import get_engine
+from utils.privacidad import TEXTO_PRIVACIDAD
 aplicar_estilos()
 
 # Red de seguridad: evita caídas si Railway no tiene los secretos configurados aún
 _logueado = bool(getattr(st.user, "is_logged_in", False))
 
+# ============ TEXTO DE POLÍTICA DE PRIVACIDAD ============
+def _mostrar_texto_privacidad():
+    st.markdown(TEXTO_PRIVACIDAD)
+
+@st.dialog("Política de Privacidad", width="large")
+def _dialogo_privacidad_home():
+    _mostrar_texto_privacidad()
+    # El botón de cerrar y el st.rerun() ya no son necesarios. La "X" nativa lo hace.
+
+# ============ MANEJAR PRIVACIDAD DESDE EL FOOTER ============
+if st.query_params.get("privacidad") == "true":
+    del st.query_params["privacidad"] # Consumimos el parámetro
+    _dialogo_privacidad_home()
+    # Al no poner st.stop(), la app sigue renderizando el home de fondo.
+
 # ============ DIÁLOGO DE LOGIN ============
 @st.dialog("Iniciar sesión")
 def _dialogo_login():
     st.markdown(
-        '<a class="auth-opcion" href="?auth=google" target="_self">Continuar con Google</a>'
-        '<div class="auth-opcion-deshabilitado">Continuar con Microsoft</div>'
-        '<p class="auth-nota">Iniciar sesión es opcional: puedes usar Aettia sin cuenta. '
+        '<p class="auth-nota" style="margin-bottom: 20px;">Iniciar sesión es opcional: puedes usar Aettia sin cuenta. '
         'Guardamos tu nombre y correo para identificar tu cuenta y asociamos tu actividad de uso a ella.</p>',
         unsafe_allow_html=True,
     )
+    
+    acepto = st.checkbox("Acepto la Política de Privacidad y el tratamiento de mis datos.")
+    
+    with st.expander("Leer Política de Privacidad"):
+        _mostrar_texto_privacidad()
+    
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    if not acepto:
+        st.error("Debes aceptar la política de privacidad para continuar.")
+        st.markdown('<div class="auth-opcion-deshabilitado" style="opacity: 0.5;">Continuar con Google</div>', unsafe_allow_html=True)
+        st.markdown('<div class="auth-opcion-deshabilitado" style="opacity: 0.5;">Continuar con Microsoft</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<a class="auth-opcion" href="?auth=google" target="_self">Continuar con Google</a>', unsafe_allow_html=True)
+        st.markdown('<div class="auth-opcion-deshabilitado">Continuar con Microsoft</div>', unsafe_allow_html=True)
 
 # ============ MANEJAR LOGIN/LOGOUT ============
 _auth = st.query_params.get("auth")
@@ -45,19 +74,19 @@ elif _auth == "login":
 
 # ============ UPSERT USUARIO EN BD ============
 def _upsert_usuario():
-    """Inserta o actualiza el usuario logueado. Devuelve el id numérico o None."""
     if not _logueado:
         return None
     try:
         engine = get_engine()
         with engine.connect() as conn:
             row = conn.execute(text("""
-                INSERT INTO usuarios (google_sub, email, nombre, ultimo_acceso)
-                VALUES (:sub, :email, :nombre, NOW())
+                INSERT INTO usuarios (google_sub, email, nombre, ultimo_acceso, fecha_acepto_terminos)
+                VALUES (:sub, :email, :nombre, NOW(), NOW())
                 ON CONFLICT (google_sub) DO UPDATE
                   SET email = EXCLUDED.email,
                       nombre = EXCLUDED.nombre,
-                      ultimo_acceso = NOW()
+                      ultimo_acceso = NOW(),
+                      fecha_acepto_terminos = COALESCE(usuarios.fecha_acepto_terminos, NOW())
                 RETURNING id
             """), {
                 "sub": st.user.sub,
@@ -116,7 +145,6 @@ if logo_b64:
 else:
     logo_html = '<div class="aettia-logo">AETTIA</div>'
 
-# Botón de login como enlace HTML dentro de la barra
 if _logueado:
     nombre = html.escape(((st.user.name or st.user.email or "").split(" ")[0]))
     auth_html = (f'<span class="auth-nombre">{nombre}</span>'
@@ -177,16 +205,19 @@ if st.session_state.vista == "home":
     </div>
     """, unsafe_allow_html=True)
 
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Footer con el enlace en la misma línea
     st.markdown("""
     <div class="nosotros-footer">
         ─────────────────────────────<br><br>
         Aettia es una plataforma de análisis no oficial para el mercado de educación continua y oferta laboral en Latinoamérica.<br>
         Toda la información presentada se basa en fuentes de acceso público y puede no ser completamente precisa. 
         Aettia no está afiliada a ninguna organización educativa ni portal de empleo.<br><br>
-        Para consultas, feedback o colaboraciones: <a href="mailto:contacto.aettia@gmail.com" style="color: #FBB03B; text-decoration: none;">contacto.aettia@gmail.com</a>
+        Para consultas, feedback o colaboraciones: <a href="mailto:contacto.aettia@gmail.com" style="color: #FBB03B; text-decoration: none;">contacto.aettia@gmail.com</a> | 
+        <a href="?privacidad=true" target="_self" style="color: #FBB03B; text-decoration: none;">Ver Política de Privacidad</a>
     </div>
     """, unsafe_allow_html=True)
-
 
 elif st.session_state.vista == "talento":
     st.markdown('<a href="?vista=home" target="_self" class="btn-volver">← Volver al inicio</a>', unsafe_allow_html=True)
@@ -194,7 +225,6 @@ elif st.session_state.vista == "talento":
 
     from vistas import analista_talento
     analista_talento.render()
-
 
 elif st.session_state.vista == "curricular":
     st.markdown('<a href="?vista=home" target="_self" class="btn-volver">← Volver al inicio</a>', unsafe_allow_html=True)

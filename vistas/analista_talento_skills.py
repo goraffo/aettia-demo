@@ -71,7 +71,6 @@ def _render_paso_1():
     prev = st.session_state.get('skills_params', {})
     prev_skills = prev.get('skills_buscadas', [])
 
-    # --- Skills (buscador principal) ---
     st.markdown('<div class="filtro-label">Skills</div>', unsafe_allow_html=True)
 
     if st.session_state.get("reset_skills"):
@@ -147,7 +146,6 @@ def _render_paso_1():
             st.warning("Ingresa al menos una skill.")
             return
 
-        # Normalizar cada chip
         skills_norm = []
         for s in skills_buscadas_raw:
             s_norm = _normalizar_input(s)
@@ -215,8 +213,9 @@ def _render_paso_2():
         params_dict=params_sql
     )
 
+    # IMPORTANTE: Traemos c_yr y c_mes
     query = f"""
-    SELECT id_topic, c_titulo, c_detalle, empresa, pais, dominio
+    SELECT id_topic, c_titulo, c_detalle, empresa, pais, dominio, c_yr, c_mes
     FROM topics_anuncios
     WHERE {where}
     """
@@ -275,18 +274,10 @@ def _render_paso_2():
         st.markdown('<div class="sin-resultados">No se encontraron resultados</div>', unsafe_allow_html=True)
         return
 
-    df_gramas = df_gramas.head(params.get('limite', 15))
-
-    rango = pd.read_sql(text(f"""
-        SELECT 
-            MIN(c_yr * 100 + CAST(c_mes AS INTEGER)) as periodo_min,
-            MAX(c_yr * 100 + CAST(c_mes AS INTEGER)) as periodo_max
-        FROM topics_anuncios
-        WHERE {where}
-    """), engine, params=params_sql)
-
-    periodo_min = int(rango['periodo_min'][0])
-    periodo_max = int(rango['periodo_max'][0])
+    # CALCULAMOS EL RANGO REAL DE LOS DATOS ENCONTRADOS
+    df['periodo'] = df['c_yr'] * 100 + df['c_mes']
+    periodo_min = int(df['periodo'].min())
+    periodo_max = int(df['periodo'].max())
 
     fecha_min = date(periodo_min // 100, periodo_min % 100, 1)
     fecha_max = date(periodo_max // 100, periodo_max % 100, 1)

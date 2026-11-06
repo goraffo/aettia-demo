@@ -1,14 +1,29 @@
 """
-Extracción de n-gramas (ahora consulta la tabla precalculada).
+Extracción de n-gramas (consulta la tabla precalculada).
 """
 from collections import defaultdict
 from sqlalchemy import text
 import pandas as pd
 
 
-def extraer_y_clasificar(df_anuncios, skill_filtro=None, engine=None, excluir=None):
+def _clasificar_ngrama(texto):
+    """Clasifica un n-grama por número de palabras."""
+    if not isinstance(texto, str):
+        return 'otro'
+    espacios = texto.count(' ')
+    if espacios == 0:
+        return 'unigrama'
+    elif espacios == 1:
+        return 'bigrama'
+    elif espacios == 2:
+        return 'trigrama'
+    return 'otro'
+
+
+def extraer_y_clasificar(df_anuncios, skill_filtro=None, engine=None, excluir=None, limite=15):
     """
     Consulta los n-gramas precalculados en anuncio_ngramas y los cruza con clasificacion_gramas.
+    Devuelve un DataFrame balanceado: 5 unigramas, 5 bigramas, 5 trigramas (o lo que haya).
     """
     excluir_set = set(excluir) if excluir else set()
     
@@ -20,7 +35,6 @@ def extraer_y_clasificar(df_anuncios, skill_filtro=None, engine=None, excluir=No
         return pd.DataFrame()
 
     # 1. Traer los ngramas precalculados de los anuncios filtrados
-    # Para no saturar la memoria, lo hacemos por lotes (o directo si es menor a 50k)
     placeholders = ', '.join([f':id_{i}' for i in range(len(ids_topic))])
     params = {f'id_{i}': v for i, v in enumerate(ids_topic)}
     
@@ -39,13 +53,11 @@ def extraer_y_clasificar(df_anuncios, skill_filtro=None, engine=None, excluir=No
     if df_ngramas.empty:
         return pd.DataFrame()
 
-    # 2. Agrupar para contar anuncios, puestos y empresas (igual que antes)
-    # Pero ahora es instantáneo porque solo iteramos sobre los ngramas encontrados
+    # 2. Agrupar para contar anuncios, puestos y empresas
     ngram_ids = defaultdict(set)
     ngram_puestos = defaultdict(set)
     ngram_empresas = defaultdict(set)
     
-    # Crear diccionario rápido de anuncios
     dict_anuncios = df_anuncios.set_index('id_topic')[['c_titulo', 'empresa']].to_dict('index')
 
     for _, row in df_ngramas.iterrows():
@@ -72,6 +84,7 @@ def extraer_y_clasificar(df_anuncios, skill_filtro=None, engine=None, excluir=No
         if skill_filtro and skill_filtro not in (None, "Todas"):
             if tipo != skill_filtro:
                 continue
+        
         resultados.append({
             'skill': ng,
             'tipo': tipo,
@@ -81,6 +94,56 @@ def extraer_y_clasificar(df_anuncios, skill_filtro=None, engine=None, excluir=No
         })
 
     df_resultado = pd.DataFrame(resultados)
-    if not df_resultado.empty:
-        df_resultado = df_resultado.sort_values('anuncios', ascending=False)
-    return df_resultado
+    if df_resultado.empty:
+        return df_resultado
+
+    # 4. Lógica de balanceo (Unigramas → Bigramas → Trigramas)
+    df_resultado['n_grama'] = df_resultado['skill'].apply(_clasificar_ngrama)
+
+    # Separar y ordenar cada grupo por anuncios (desc)
+    unigramas = df_resultado[df_resultado['n_grama'] == 'unigrama'].sort_values('anuncios', ascending=False).to_dict('records')
+    bigramas = df_resultado[df_resultado['n_grama'] == 'bigrama'].sort_values('anuncios', ascending=False).to_dict('records')
+    trigramas = df_resultado[df_resultado['n_grama'] == 'trigrama'].sort_values('anuncios', ascending=False).to_dict('records')
+    otros = df_resultado[df_resultado['n_grama'] == 'otro'].sort_values('anuncios', ascending=False).to_dict('records')
+
+    # Cupos iniciales
+    cupo = limite // 3
+    resto = limite % 3
+    cupo_uni = cupo + (1 if resto >= 1 else 0)
+    cupo_bi = cupo + (1 if resto >= 2 else 0)
+    cupo_tri = cupo
+
+    seleccion_uni = []
+    seleccion_bi = []
+    seleccion_tri = []
+
+    # Llenar Unigramas
+    tomar = min(len(unigramas), cupo_uni)
+    seleccion_uni = unigramas[:tomar]
+    faltan_uni = cupo_uni - tomar
+
+    # Llenar Bigramas (con lo que haya + relleno de unigramas faltantes)
+    tomar_bi = min(len(bigramas), cupo_bi + faltan_uni)
+    seleccion_bi = bigramas[:tomar_bi]
+    faltan_bi = (cupo_bi + faltan_uni) - tomar_bi
+
+    # Llenar Trigramas (con lo que haya + relleno de bigramas faltantes)
+    tomar_tri = min(len(trigramas), cupo_tri + faltan_bi)
+    seleccion_tri = trigramas[:tomar_tri]
+    faltan_tri = (cupo_tri + faltan_bi) - tomar_tri
+
+    # Si aún falta, rellenar con "otros"
+    seleccion_otros = []
+    if faltan_tri > 0 and otros:
+        seleccion_otros = otros[:faltan_tri]
+
+    # Unir en el orden visual: Unigramas → Bigramas → Trigramas → Otros
+    df_final = pd.DataFrame(seleccion_uni + seleccion_bi + seleccion_tri + seleccion_otros)
+
+    if df_final.empty:
+        return df_final
+
+    # Eliminar columna auxiliar y resetear índice
+    df_final = df_final.drop(columns=['n_grama'], errors='ignore').reset_index(drop=True)
+
+    return df_final

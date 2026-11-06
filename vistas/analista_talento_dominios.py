@@ -58,7 +58,6 @@ def _render_paso_1():
     prev = st.session_state.get('dominios_params', {})
     prev_dominios = prev.get('dominios', [])
 
-    # --- Dominio temático (filtro principal) ---
     st.markdown('<div class="filtro-label">Dominio temático</div>', unsafe_allow_html=True)
 
     if st.session_state.get("reset_dominios"):
@@ -81,7 +80,6 @@ def _render_paso_1():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- Fila 1: País | Ubicación ---
     col1, col2 = st.columns(2)
 
     with col1:
@@ -102,7 +100,6 @@ def _render_paso_1():
             key="dom_zona"
         )
 
-    # --- Fila 2: Tipo de habilidad | Límite de resultados ---
     col3, col4 = st.columns(2)
 
     with col3:
@@ -123,7 +120,6 @@ def _render_paso_1():
             key="dom_limite"
         )
 
-    # --- Fila 3: Desde | Hasta ---
     col5, col6 = st.columns(2)
 
     with col5:
@@ -215,8 +211,9 @@ def _render_paso_2():
         params_dict=params_sql
     )
 
+    # IMPORTANTE: Traemos c_yr y c_mes
     query = f"""
-    SELECT id_topic, c_titulo, c_detalle, empresa, pais, dominio
+    SELECT id_topic, c_titulo, c_detalle, empresa, pais, dominio, c_yr, c_mes
     FROM topics_anuncios
     WHERE {where}
     """
@@ -273,18 +270,10 @@ def _render_paso_2():
         st.markdown('<div class="sin-resultados">No se encontraron resultados</div>', unsafe_allow_html=True)
         return
 
-    df_gramas = df_gramas.head(params.get('limite', 15))
-
-    rango = pd.read_sql(text(f"""
-        SELECT 
-            MIN(c_yr * 100 + CAST(c_mes AS INTEGER)) as periodo_min,
-            MAX(c_yr * 100 + CAST(c_mes AS INTEGER)) as periodo_max
-        FROM topics_anuncios
-        WHERE {where}
-    """), engine, params=params_sql)
-    
-    periodo_min = int(rango['periodo_min'][0])
-    periodo_max = int(rango['periodo_max'][0])
+    # CALCULAMOS EL RANGO REAL DE LOS DATOS ENCONTRADOS
+    df['periodo'] = df['c_yr'] * 100 + df['c_mes']
+    periodo_min = int(df['periodo'].min())
+    periodo_max = int(df['periodo'].max())
     
     fecha_min = date(periodo_min // 100, periodo_min % 100, 1)
     fecha_max = date(periodo_max // 100, periodo_max % 100, 1)

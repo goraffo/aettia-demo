@@ -11,6 +11,7 @@ from utils.db import get_engine
 from utils.filtros import construir_filtros_puestos
 from utils.ngramas import extraer_y_clasificar
 from utils.tracking import log_evento, buscar_con_metricas
+from utils.fechas import obtener_rango_fechas_analista  # <-- NUEVO IMPORT
 
 MESES_ES = {
     1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
@@ -33,11 +34,23 @@ def _formato_mes_anio(fecha):
     return f"{MESES_ES[fecha.month]} de {fecha.year}"
 
 
+def _a_fecha(valor):
+    """'AAAA-MM-DD', date o datetime -> date (día 1). None si está vacío o es inválido."""
+    if not valor:
+        return None
+    try:
+        if isinstance(valor, date):
+            return date(valor.year, valor.month, 1)
+        return date(int(str(valor)[:4]), int(str(valor)[5:7]), 1)
+    except (ValueError, TypeError):
+        return None
+
+
 def render():
     if "talento_paso" not in st.session_state:
         st.session_state.talento_paso = 1
 
-    st.markdown('<div class="estado-nav">Data  >  Analista de Talento</div>', unsafe_allow_html=True)
+    st.markdown('<div class="estado-nav">Data  >  Habilidades Clave</div>', unsafe_allow_html=True)
 
     tabs = st.tabs(["PUESTOS", "DOMINIOS", "SKILLS"])
 
@@ -56,6 +69,9 @@ def render():
 
 def _render_paso_1():
     engine = get_engine()
+
+    # --- NUEVO: Obtener rango de fechas ---
+    fecha_min, fecha_max = obtener_rango_fechas_analista()
 
     if st.session_state.get("limpiar_fecha_desde_flag"):
         st.session_state.fecha_desde_widget = None
@@ -103,6 +119,8 @@ def _render_paso_1():
             fecha_desde = st.date_input(
                 "Desde",
                 value=pd.to_datetime(fecha_desde_prev).date() if fecha_desde_prev else None,
+                min_value=fecha_min,  # <-- NUEVO
+                max_value=fecha_max,  # <-- NUEVO
                 key="fecha_desde_widget"
             )
         with col_fd2:
@@ -126,6 +144,8 @@ def _render_paso_1():
             fecha_hasta = st.date_input(
                 "Hasta",
                 value=pd.to_datetime(fecha_hasta_prev).date() if fecha_hasta_prev else None,
+                min_value=fecha_min,  # <-- NUEVO
+                max_value=fecha_max,  # <-- NUEVO
                 key="fecha_hasta_widget"
             )
         with col_fh2:

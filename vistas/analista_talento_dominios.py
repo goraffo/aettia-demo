@@ -12,6 +12,7 @@ from utils.db import get_engine
 from utils.filtros import construir_filtros_dominios
 from utils.ngramas import extraer_y_clasificar
 from utils.tracking import log_evento, buscar_con_metricas
+from utils.fechas import obtener_rango_fechas_analista  # <-- NUEVO IMPORT
 
 MESES_ES = {
     1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
@@ -46,6 +47,9 @@ def render():
 
 def _render_paso_1():
     engine = get_engine()
+
+    # --- NUEVO: Obtener rango de fechas ---
+    fecha_min, fecha_max = obtener_rango_fechas_analista()
 
     if st.session_state.get("dom_limpiar_fecha_desde_flag"):
         st.session_state.dom_fecha_desde_widget = None
@@ -129,6 +133,8 @@ def _render_paso_1():
             fecha_desde = st.date_input(
                 "Desde",
                 value=pd.to_datetime(fecha_desde_prev).date() if fecha_desde_prev else None,
+                min_value=fecha_min,  # <-- NUEVO
+                max_value=fecha_max,  # <-- NUEVO
                 key="dom_fecha_desde_widget"
             )
         with col_fd2:
@@ -144,6 +150,8 @@ def _render_paso_1():
             fecha_hasta = st.date_input(
                 "Hasta",
                 value=pd.to_datetime(fecha_hasta_prev).date() if fecha_hasta_prev else None,
+                min_value=fecha_min,  # <-- NUEVO
+                max_value=fecha_max,  # <-- NUEVO
                 key="dom_fecha_hasta_widget"
             )
         with col_fh2:
@@ -173,6 +181,7 @@ def _render_paso_1():
 
 
 def _render_paso_2():
+
     engine = get_engine()
     params = st.session_state.get('dominios_params', {})
 

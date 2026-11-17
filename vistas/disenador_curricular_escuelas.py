@@ -12,7 +12,7 @@ from utils.db import get_engine
 from utils.filtros import construir_filtros_escuelas
 from utils.tracking import log_evento, buscar_con_metricas
 from utils.temporadas import contar_temporadas
-
+from utils.fechas import obtener_rango_fechas_disenador  # <-- NUEVO IMPORT
 
 MESES_ES = {
     1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
@@ -64,6 +64,9 @@ def render():
 def _render_paso_1():
     engine = get_engine()
 
+    # --- NUEVO: Obtener rango de fechas ---
+    fecha_min, fecha_max = obtener_rango_fechas_disenador()
+
     if st.session_state.get("esc_limpiar_fecha_desde_flag"):
         st.session_state.esc_fecha_desde_widget = None
         st.session_state.esc_limpiar_fecha_desde_flag = False
@@ -76,7 +79,6 @@ def _render_paso_1():
     prev_orgs = prev.get('organizaciones', [])
     prev_skills = prev.get('skills', [])
 
-    # --- Organización educativa ---
     st.markdown('<div class="filtro-label-verde">Organización educativa</div>', unsafe_allow_html=True)
 
     if st.session_state.get("reset_escuelas"):
@@ -102,7 +104,6 @@ def _render_paso_1():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- Skills + Límite de resultados ---
     col_skills, col_limite = st.columns(2)
 
     with col_skills:
@@ -131,7 +132,6 @@ def _render_paso_1():
 
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- Filtros secundarios ---
     col1, col2 = st.columns(2)
 
     with col1:
@@ -154,6 +154,8 @@ def _render_paso_1():
             fecha_desde = st.date_input(
                 "Desde",
                 value=pd.to_datetime(fecha_desde_prev).date() if fecha_desde_prev else None,
+                min_value=fecha_min,
+                max_value=fecha_max,
                 key="esc_fecha_desde_widget"
             )
         with col_fd2:
@@ -187,6 +189,8 @@ def _render_paso_1():
             fecha_hasta = st.date_input(
                 "Hasta",
                 value=pd.to_datetime(fecha_hasta_prev).date() if fecha_hasta_prev else None,
+                min_value=fecha_min,
+                max_value=fecha_max,
                 key="esc_fecha_hasta_widget"
             )
         with col_fh2:

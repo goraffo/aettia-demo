@@ -179,16 +179,16 @@ if st.session_state.vista == "home":
                 <circle cx="12" cy="7" r="4"/>
                 <path d="M12 13c-3.87 0-7 2.13-7 4.75V20h14v-2.25C19 15.13 15.87 13 12 13z"/>
             </svg>
-            <div class="card-titulo-grande">ANALISTA DE TALENTO</div>
-            <div class="card-subtitulo-secundario">Conoce las skills más demandadas →</div>
+            <div class="card-titulo-grande">HABILIDADES CLAVE</div>
+            <div class="card-subtitulo-secundario">Conoce las skills más demandadas&nbsp;<span class="flecha">→</span></div>
         </a>
         <a href="?vista=curricular" target="_self" class="card-activa card-curricular">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF" width="56" height="56">
                 <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z"/>
                 <path d="M5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z"/>
             </svg>
-            <div class="card-titulo-grande">DISEÑADOR CURRICULAR</div>
-            <div class="card-subtitulo-secundario">Conoce los productos académicos ofertados →</div>
+            <div class="card-titulo-grande">PRODUCTOS ACADÉMICOS</div>
+            <div class="card-subtitulo-secundario">Conoce los productos académicos ofertados&nbsp;<span class="flecha">→</span></div>
         </a>
     </div>
     """, unsafe_allow_html=True)

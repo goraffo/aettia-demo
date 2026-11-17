@@ -6,7 +6,7 @@ import streamlit as st
 
 
 def render():
-    st.markdown('<div class="estado-nav">Data  >  Diseñador Curricular</div>', unsafe_allow_html=True)
+    st.markdown('<div class="estado-nav">Data  >  Productos Académicos</div>', unsafe_allow_html=True)
 
     tabs = st.tabs(["ESCUELAS", "TIPOS", "SKILLS"])
 

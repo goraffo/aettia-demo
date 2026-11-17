@@ -14,7 +14,7 @@ from utils.db import get_engine
 from utils.filtros import construir_filtros_skills_dc
 from utils.tracking import log_evento, buscar_con_metricas
 from utils.temporadas import contar_temporadas
-
+from utils.fechas import obtener_rango_fechas_disenador  # <-- NUEVO IMPORT
 
 MESES_ES = {
     1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
@@ -76,6 +76,9 @@ def render():
 
 def _render_paso_1():
     engine = get_engine()
+
+    # --- NUEVO: Obtener rango de fechas ---
+    fecha_min, fecha_max = obtener_rango_fechas_disenador()
 
     if st.session_state.get("dcs_limpiar_fecha_desde_flag"):
         st.session_state.dcs_fecha_desde_widget = None
@@ -174,6 +177,8 @@ def _render_paso_1():
             fecha_desde = st.date_input(
                 "Desde",
                 value=pd.to_datetime(fecha_desde_prev).date() if fecha_desde_prev else None,
+                min_value=fecha_min,
+                max_value=fecha_max,
                 key="dcs_fecha_desde_widget"
             )
         with col_fd2:
@@ -189,6 +194,8 @@ def _render_paso_1():
             fecha_hasta = st.date_input(
                 "Hasta",
                 value=pd.to_datetime(fecha_hasta_prev).date() if fecha_hasta_prev else None,
+                min_value=fecha_min,
+                max_value=fecha_max,
                 key="dcs_fecha_hasta_widget"
             )
         with col_fh2:

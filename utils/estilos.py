@@ -197,10 +197,20 @@ def aplicar_estilos():
             justify-content: center;
             align-items: center;
             height: 200px;
-            transition: background-color 0.2s;
+            transition: transform .25s cubic-bezier(.2,.6,.2,1),
+                        box-shadow .25s cubic-bezier(.2,.6,.2,1),
+                        background-color .25s ease;
         }
         .card-activa:hover {
-            background-color: #5A5A5A;
+            background-color: #565656;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(0,0,0,.35);
+        }
+        .card-talento:hover {
+            box-shadow: 0 12px 28px rgba(0,0,0,.35), 0 0 0 1px rgba(0,154,222,.45);
+        }
+        .card-curricular:hover {
+            box-shadow: 0 12px 28px rgba(0,0,0,.35), 0 0 0 1px rgba(133,199,118,.45);
         }
         .card-activa .card-titulo-grande {
             font-family: 'Figtree', sans-serif;
@@ -218,10 +228,22 @@ def aplicar_estilos():
             letter-spacing: 1px;
             text-decoration: none !important;
         }
+        .card-activa .flecha {
+            display: inline-block;
+            transition: transform .25s ease;
+        }
+        .card-activa:hover .flecha {
+            transform: translateX(4px);
+        }
         .card-talento { border-top: 4px solid #009ADE; }
         .card-curricular { border-top: 4px solid #85C776; }
         .card-talento svg { fill: #009ADE; }
         .card-curricular svg { fill: #85C776; }
+
+        .card-activa:focus-visible {
+            outline: 2px solid #FBB03B;
+            outline-offset: 3px;
+        }
 
         .card-inactiva {
             background-color: #4D4D4D;
@@ -551,6 +573,12 @@ def aplicar_estilos():
             [data-testid="stMain"], [data-testid="stAppViewContainer"] {
                 overflow-x: hidden;
             }
+        }
+
+        /* Accesibilidad y movimiento reducido */
+        @media (prefers-reduced-motion: reduce) {
+            .card-activa, .card-activa .flecha { transition: none; }
+            .card-activa:hover { transform: none; }
         }
     </style>
     """, unsafe_allow_html=True)
